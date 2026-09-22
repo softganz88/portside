@@ -11,11 +11,12 @@ interface Props {
   stopping: boolean;
   onCopyAddress: (row: Row) => void;
   onCopyPid: (row: Row) => void;
+  onCopyCommand: (row: Row) => void;
   onOpen: (row: Row) => void;
   onStop: (row: Row) => void;
 }
 
-export function Details({ row, closed, selfPid, error, stopping, onCopyAddress, onCopyPid, onOpen, onStop }: Props) {
+export function Details({ row, closed, selfPid, error, stopping, onCopyAddress, onCopyPid, onCopyCommand, onOpen, onStop }: Props) {
   if (!row || closed) {
     return (
       <aside className="details" aria-label="Socket details">
@@ -57,6 +58,15 @@ export function Details({ row, closed, selfPid, error, stopping, onCopyAddress, 
           onClick={() => onCopyPid(row)}
         >
           Copy PID
+        </button>
+        <button
+          type="button"
+          className="btn"
+          disabled={!row.cmdline}
+          title={row.cmdline ? undefined : "The command line of this process is unknown."}
+          onClick={() => onCopyCommand(row)}
+        >
+          Copy command
         </button>
         <button
           type="button"

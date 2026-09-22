@@ -190,6 +190,7 @@ export default function App() {
   };
   const copyAddr = (row: Row) => copy(copyAddress(row), copyAddress(row));
   const copyPid = (row: Row) => row.pid !== null && copy(String(row.pid), `PID ${row.pid}`);
+  const copyCommand = (row: Row) => row.cmdline && copy(row.cmdline, "command line");
   const open = async (row: Row) => {
     const url = browserUrl(row);
     if (!url) return;
@@ -416,6 +417,7 @@ export default function App() {
           stopping={selectedRow?.pid != null && stopping.has(selectedRow.pid)}
           onCopyAddress={copyAddr}
           onCopyPid={copyPid}
+          onCopyCommand={copyCommand}
           onOpen={open}
           onStop={requestStop}
         />
