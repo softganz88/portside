@@ -2766,6 +2766,7 @@ dependencies = [
 name = "portside"
 version = "0.1.0"
 dependencies = [
+ "gtk",
  "nix",
  "serde",
  "serde_json",

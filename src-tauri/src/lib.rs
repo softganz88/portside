@@ -74,12 +74,33 @@ async fn stop_process(pid: i32, expected_start_time: u64, force: bool) -> StopRe
     stop::stop_process(pid, expected_start_time, force, std::process::id() as i32).await
 }
 
+/// Cinnamon signals dark mode through the GTK theme name (e.g. `Mint-Y-Dark-Aqua`) while the
+/// portal reports "no preference", so WebKit would otherwise render `prefers-color-scheme: light`.
+#[cfg(target_os = "linux")]
+fn follow_gtk_dark_theme() {
+    use gtk::prelude::*;
+    let Some(settings) = gtk::Settings::default() else { return };
+    let apply = |s: &gtk::Settings| {
+        let dark = s.gtk_theme_name().is_some_and(|n| n.to_lowercase().contains("dark"));
+        if dark {
+            s.set_gtk_application_prefer_dark_theme(true);
+        }
+    };
+    apply(&settings);
+    settings.connect_gtk_theme_name_notify(apply);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_opener::init())
+        .setup(|_| {
+            #[cfg(target_os = "linux")]
+            follow_gtk_dark_theme();
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![scan_sockets, stop_process])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
