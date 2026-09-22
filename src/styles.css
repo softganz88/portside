@@ -481,6 +481,8 @@ kbd {
   padding: 0 6px;
   border: 1px solid var(--border);
   border-radius: 999px;
+  /* Filled so badge text contrast doesn't depend on the row state (light --success on --selected is 4.38:1). */
+  background: var(--bg);
   font: 11px/16px var(--mono);
   color: var(--text-muted);
 }
