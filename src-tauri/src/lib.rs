@@ -81,7 +81,9 @@ fn follow_gtk_dark_theme() {
     use gtk::prelude::*;
     let Some(settings) = gtk::Settings::default() else { return };
     let apply = |s: &gtk::Settings| {
-        let dark = s.gtk_theme_name().is_some_and(|n| n.to_lowercase().contains("dark"));
+        // GTK_THEME overrides the XSettings theme name for rendering, so it wins here too.
+        let name = std::env::var("GTK_THEME").ok().or_else(|| s.gtk_theme_name().map(Into::into));
+        let dark = name.is_some_and(|n| n.to_lowercase().contains("dark"));
         if dark {
             s.set_gtk_application_prefer_dark_theme(true);
         }

@@ -71,6 +71,26 @@ body {
   -webkit-user-select: none;
 }
 
+/* CSS scrollbars: WebKitGTK's native overlay scrollbars paint above modal dialogs. */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border) padding-box;
+  border: 2px solid transparent;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-muted);
+}
+
 button,
 input {
   font: inherit;
@@ -373,7 +393,7 @@ kbd {
 
 .row {
   display: grid;
-  grid-template-columns: 64px 60px minmax(136px, 1.4fr) minmax(88px, 1.4fr) 64px minmax(64px, 1fr);
+  grid-template-columns: 64px 60px minmax(126px, 1.4fr) minmax(110px, 1.4fr) 64px minmax(56px, 1fr);
   align-items: center;
   height: 32px;
   min-width: 480px;

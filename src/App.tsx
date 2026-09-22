@@ -275,6 +275,7 @@ export default function App() {
     } else if (e.key === "Enter") {
       e.preventDefault();
       if (visible[0]) moveTo(visible[0].key);
+      else focusList();
     }
   };
 
