@@ -65,7 +65,7 @@ fn scan_sockets_inner() -> Result<ScanResult, ScanError> {
 }
 
 #[tauri::command]
-fn scan_sockets() -> Result<ScanResult, ScanError> {
+async fn scan_sockets() -> Result<ScanResult, ScanError> {
     scan_sockets_inner()
 }
 
