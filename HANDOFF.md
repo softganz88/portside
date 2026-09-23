@@ -86,6 +86,6 @@ Later work, each measured before and after with in-app marks:
 - list windowing for 1,000+ sockets, plus a fix keeping the sort headers in the Tab order
 - the AppImage repack step
 
-Releases: v0.1.0 and v0.1.1 on GitHub (`softganz88/portside`). v0.1.1 predates the AppImage repack.
+Releases: v0.1.0, v0.1.1 and v0.1.2 on GitHub (`softganz88/portside`). v0.1.2 is the first with the repacked AppImage.
 
 `git log` has one commit per fix.
