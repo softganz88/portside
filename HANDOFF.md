@@ -1,6 +1,6 @@
 # Portside — handoff
 
-State as of 2026-09-23, commit `ce7173c` on `main`. Read `SPEC.md` and `DESIGN.md` first; they are the source of truth. This file covers what was built, what was verified and how, and what will surprise you. Open work is in `TODO.md`.
+State as of 2026-09-23 on `main` (see `git log` for the latest commit). Read `SPEC.md` and `DESIGN.md` first; they are the source of truth. This file covers what was built, what was verified and how, and what will surprise you. Open work is in `TODO.md`.
 
 ## Status
 
@@ -34,7 +34,7 @@ Screenshots in `docs/screenshots/` are from the current build.
 | Proto badge has a `--bg` fill | Light `--success` on `--selected` is 4.38:1, under AA. The fill keeps DESIGN's hex values unchanged. |
 | "Copy command" button | SPEC §1 lists copy command line; DESIGN's action list omits it. SPEC wins. |
 | Sort headers are Tab stops | Otherwise sorting isn't keyboard-reachable; the rows remain a single roving tab stop. |
-| No list virtualization | Not measured as needed; marked `ponytail:` in `Table.tsx`. See TODO. |
+| List windowing in `Table.tsx`: only rows near the viewport (10 above/below overscan) are in the DOM; spacers stand in for the rest | At 1,234 sockets, rendering every row made first render 483–599 ms, filter clear 336–396 ms and sort 228–342 ms. With windowing: 72–110, 20–41 and 13–51 ms. Refresh cycles stay 62–91 ms and filter keystrokes 15–32 ms. `focusRow` scrolls by index (fixed 32 px rows) because the target may not be rendered. When the selected row is out of the DOM, a zero-height stand-in after the header holds the Tab stop so the order stays headers → row. |
 
 Wording SPEC doesn't specify, chosen during the build (change freely):
 - Kernel-row Stop tooltip: "This socket belongs to the kernel; there is no process to stop."
