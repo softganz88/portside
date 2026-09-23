@@ -55,7 +55,7 @@ Wording SPEC doesn't specify, chosen during the build (change freely):
 | 7 | ✅ | Screenshot diff across 10 refreshes: only scrollbar fade and "Updated Ns ago" differ |
 | 8 | ✅ | Paused 5 s: new server not shown; `F5` showed it while still paused. Minimize pause: tokio-thread `syscr` (from `/proc/<pid>/task/*/io`) was 0 while minimized |
 | 9 | ✅ | WCAG ratios computed from `styles.css` tokens for all 23 fg/bg pairs actually used, per theme. All pass after the badge fix; minimum 5.02:1 text, 5.08:1 focus ring |
-| 10 | ⚠️ | Every action done by keyboard, focus rings visible. `prefers-reduced-motion` rule exists but was **not** tested with the system setting on |
+| 10 | ✅ | Every action done by keyboard, focus rings visible. Reduced motion: with Cinnamon animations off (`org.cinnamon.desktop.interface enable-animations false` → GTK `gtk-enable-animations` false → WebKit `prefers-reduced-motion: reduce`), a new row got no highlight and the refresh icon didn't rotate; with animations on, the highlight faded over ~1.4 s and the icon rotated |
 | 11 | ✅ | Fixture tests for `tcp`, `tcp6`, `udp`, `udp6` |
 | 12 | ⚠️ | Release binary/`.deb`: populated in 518–637 ms (median 566, 20 runs). **AppImage: 1191–1683 ms (median 1506), misses < 1 s.** Its cost is mounting and decompressing bundled WebKit every launch (see TODO) |
 

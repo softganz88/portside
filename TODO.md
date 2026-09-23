@@ -8,7 +8,6 @@ Open work, highest priority first. Context for each item is in `HANDOFF.md`.
   - an AppImage that uses the system WebKitGTK instead of bundling it
   - a less CPU-heavy squashfs compression
   - accept it and ship the `.deb` as the primary artifact (already stated in the README)
-- [ ] **Test `prefers-reduced-motion`** (AC10). The CSS rule exists but hasn't been checked with the system setting on. Enable reduced animations in Cinnamon, confirm new rows get no fade-out highlight, then confirm the refresh icon doesn't spin and dialogs don't animate.
 - [ ] **Measure 1000+ sockets** (SPEC §5: scan + render < 150 ms). Only ~60 sockets have been tested. Open ~1000 listeners (e.g. a Python script binding 1000 ports), time scan + first render with in-app marks, and add list windowing only if it misses (see the `ponytail:` note in `Table.tsx`).
 
 ## Robustness
