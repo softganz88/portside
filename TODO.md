@@ -8,7 +8,15 @@ Open work, highest priority first. Context for each item is in `HANDOFF.md`.
   - an AppImage that uses the system WebKitGTK instead of bundling it
   - a less CPU-heavy squashfs compression
   - accept it and ship the `.deb` as the primary artifact (already stated in the README)
-- [ ] **Measure 1000+ sockets** (SPEC §5: scan + render < 150 ms). Only ~60 sockets have been tested. Open ~1000 listeners (e.g. a Python script binding 1000 ports), time scan + first render with in-app marks, and add list windowing only if it misses (see the `ponytail:` note in `Table.tsx`).
+- [ ] **Large lists render slowly** (SPEC §5: 1000+ sockets, scan + render < 150 ms). Measured with 1,234 sockets and in-app paint marks:
+  - backend scan: 27–31 ms
+  - 2 s refresh (scan + IPC + diff render): **74–107 ms, passes**
+  - filter keystroke to paint: 31–54 ms, passes
+  - first render: **483–599 ms**
+  - clearing the filter (all rows come back): **336–396 ms**
+  - clicking a sort header: **228–342 ms**
+
+  The slow cases all mount or reorder ~1,200 row elements; refreshes are cheap because unchanged rows are memoized. Fix: window the list (render only the ~15 visible rows plus overscan) at the `ponytail:` note in `Table.tsx`. Rows are a fixed 32 px, so plain offset math works without a library. It must keep `aria-rowcount`/`aria-rowindex`, roving focus, and scroll-into-view on keyboard moves.
 
 ## Robustness
 
