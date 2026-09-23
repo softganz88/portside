@@ -12,7 +12,7 @@ v1 is feature-complete against SPEC §1 "In scope". All gates pass with zero war
 | `cargo clippy --all-targets -- -D warnings` | clean |
 | `npx tsc --noEmit` | clean |
 | `npx vitest run` | 20 passed |
-| `npm run tauri build` | `.deb` + AppImage, 0 warnings; both launch and populate |
+| `npm run tauri build` + `npm run repack-appimage` | `.deb` + AppImage, 0 warnings; both launch and populate |
 
 Screenshots in `docs/screenshots/` are from the current build.
 
@@ -28,6 +28,7 @@ Screenshots in `docs/screenshots/` are from the current build.
 | Decision | Why |
 |---|---|
 | Window starts hidden (`visible: false`), shown on `PageLoadEvent::Finished`, plus an unconditional show after 2 s (`lib.rs`) | Showing the window before WebKit's web process is up makes the UI process wait out a **500 ms sync-IPC timeout** on ~half of launches. Found with strace: main thread timed `futex` wait after sending on the web-process IPC socket. Hidden-until-loaded removed it (binary ≥1 s launches: 8/20 → 0/20). The 2 s fallback exists because a hanging load or a crashed web process never fires `Finished`; without it the app ran with no window. |
+| AppImage repacked after build (`scripts/repack-appimage.sh`) with WebKit, JavaScriptCore and ICU data uncompressed | The AppImage runtime mounts its squashfs through FUSE on every launch, so decompressing ~160 MB of WebKit pages cost ~700 ms. Unpacked, the AppImage is as fast as the bare binary, so bundling itself costs nothing. Tauri can't pass `mksquashfs` options, and smaller zstd blocks didn't help. Measured options: current 76 MB / ~1.3 s, **mixed 178 MB / ~0.9–1.0 s (chosen; sometimes > 1 s)**, fully uncompressed 225 MB / ~0.78 s (0 of 20 launches over 1 s). Switching to uncompressed replaces the script's `-action` option with `-noD -noF -noI -noX`. |
 | window-state plugin restores everything **except** `VISIBLE` | Restoring visibility would show the window immediately and bring the stall back. |
 | Dark mode: `follow_gtk_dark_theme()` sets GTK's prefer-dark when the GTK theme name (or `GTK_THEME`) contains "dark" | Cinnamon expresses dark mode via the theme name (`Mint-Y-Dark-Aqua`) while the freedesktop portal reports "no preference", so WebKit would render light. The `gtk` crate is a direct dependency only for this (already compiled in via Tauri). |
 | CSS `::-webkit-scrollbar` styling | WebKitGTK's native overlay scrollbars paint **above** modal `<dialog>`s. |
@@ -57,7 +58,7 @@ Wording SPEC doesn't specify, chosen during the build (change freely):
 | 9 | ✅ | WCAG ratios computed from `styles.css` tokens for all 23 fg/bg pairs actually used, per theme. All pass after the badge fix; minimum 5.02:1 text, 5.08:1 focus ring |
 | 10 | ✅ | Every action done by keyboard, focus rings visible. Reduced motion: with Cinnamon animations off (`org.cinnamon.desktop.interface enable-animations false` → GTK `gtk-enable-animations` false → WebKit `prefers-reduced-motion: reduce`), a new row got no highlight and the refresh icon didn't rotate; with animations on, the highlight faded over ~1.4 s and the icon rotated |
 | 11 | ✅ | Fixture tests for `tcp`, `tcp6`, `udp`, `udp6` |
-| 12 | ⚠️ | Release binary/`.deb`: populated in 518–637 ms (median 566, 20 runs). **AppImage: 1191–1683 ms (median 1506), misses < 1 s.** Its cost is mounting and decompressing bundled WebKit every launch (see TODO) |
+| 12 | ⚠️ | Release binary/`.deb`: populated in 518–637 ms (median 566, 20 runs); meets it. AppImage after `npm run repack-appimage`: medians 874–999 ms across runs, range 778–1073 ms; **11 of 50 launches exceeded 1 s**. Unrepacked AppImage: ~1.3 s. Measured with in-app marks; see the AppImage decision above |
 
 ## Gotchas for whoever picks this up
 

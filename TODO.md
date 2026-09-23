@@ -4,10 +4,10 @@ Open work, highest priority first. Context for each item is in `HANDOFF.md`.
 
 ## Acceptance gaps
 
-- [ ] **AppImage cold start is ~1.5 s** (AC12 wants < 1 s; the `.deb` meets it at ~0.57 s). Every phase is slower than the plain binary: +440 ms before `setup`, +260 ms to show, +220 ms to paint. That points at mounting and decompressing the bundled WebKit on each launch. Options to try:
+- [ ] **AppImage cold start is borderline.** After `npm run repack-appimage` it's ~0.9–1.0 s, and about 1 launch in 4 goes over the 1 s AC12 target (the `.deb` meets it at ~0.57 s). Options:
+  - repack fully uncompressed: 225 MB, ~0.78 s, 0 of 20 launches over 1 s. It's a one-line change in `scripts/repack-appimage.sh`.
   - an AppImage that uses the system WebKitGTK instead of bundling it
-  - a less CPU-heavy squashfs compression
-  - accept it and ship the `.deb` as the primary artifact (already stated in the README)
+  - keep it as is, with the `.deb` as the primary artifact (already stated in the README)
 
 ## Robustness
 

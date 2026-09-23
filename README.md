@@ -25,6 +25,7 @@ sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev build-essential
 npm install
 npm run tauri dev       # run in development (Vite on :1420 + debug binary)
 npm run tauri build     # release binary + .deb + AppImage under src-tauri/target/release/bundle/
+npm run repack-appimage # then repack the AppImage for faster startup (see Limits)
 ```
 
 ## Tests
@@ -79,6 +80,6 @@ Filter tips: `30` matches ports starting with 30; `:8080` matches port 8080 exac
 
 ## Limits
 
-Startup: the `.deb` (or the release binary) shows a populated list in about 0.6 s. The AppImage takes about 1.5 s, because it mounts and decompresses its bundled WebKit on every launch; install the `.deb` if startup time matters.
+Startup: the `.deb` (or the release binary) shows a populated list in about 0.6 s. The AppImage takes about 0.9–1.0 s, and roughly one launch in four goes slightly over 1 s. Every launch it mounts its image and decompresses the bundled WebKit, so `npm run repack-appimage` stores the three largest WebKit libraries uncompressed (a 178 MB file instead of 76 MB). Install the `.deb` if startup time matters.
 
 Sockets owned by other users show as **Restricted**: without root, `/proc/<pid>/fd` of other users can't be read, so their process can't be identified or stopped. This is by design.
