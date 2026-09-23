@@ -45,4 +45,6 @@ Filter tips: `30` matches ports starting with 30; `:8080` matches port 8080 exac
 
 ## Limits
 
+Startup: the `.deb` (or the release binary) shows a populated list in about 0.6 s. The AppImage takes about 1.5 s, because it mounts and decompresses its bundled WebKit on every launch; install the `.deb` if startup time matters.
+
 Sockets owned by other users show as **Restricted**: without root, `/proc/<pid>/fd` of other users can't be read, so their process can't be identified or stopped. This is by design.
