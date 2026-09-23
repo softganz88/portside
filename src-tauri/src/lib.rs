@@ -5,6 +5,7 @@ mod stop;
 
 use model::{Ownership, Proto, Row, ScanError, ScanResult, StopResult};
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::webview::PageLoadEvent;
 use tauri::Manager;
 use tauri_plugin_window_state::StateFlags;
@@ -97,6 +98,7 @@ fn follow_gtk_dark_theme() {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    static LOADED: AtomicBool = AtomicBool::new(false);
     tauri::Builder::default()
         // Restore size/position but not visibility: the window stays hidden until the page loads.
         .plugin(
@@ -110,6 +112,7 @@ pub fn run() {
         // 500 ms sync-IPC timeout on ~half of launches; showing it once the page has loaded avoids it.
         .on_page_load(|webview, payload| {
             if payload.event() == PageLoadEvent::Finished {
+                LOADED.store(true, Ordering::Relaxed);
                 let _ = webview.window().show();
             }
         })
@@ -117,10 +120,19 @@ pub fn run() {
             #[cfg(target_os = "linux")]
             follow_gtk_dark_theme();
             // Safety net: a load that hangs or a crashed web process never reaches Finished,
-            // which would leave the app running with no window. Showing twice is a no-op.
+            // which would leave the app running with no window, or a blank one. Load the app
+            // once more (a fresh web process) and show; showing twice is a no-op. Navigate
+            // rather than reload: a web process killed before the first commit leaves no URL.
+            let app_url = match app.config().build.dev_url.clone() {
+                Some(dev) if tauri::is_dev() => dev,
+                _ => "tauri://localhost".parse().expect("static URL"),
+            };
             if let Some(window) = app.get_webview_window("main") {
                 tauri::async_runtime::spawn(async move {
                     tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                    if !LOADED.load(Ordering::Relaxed) {
+                        let _ = window.navigate(app_url);
+                    }
                     let _ = window.show();
                 });
             }

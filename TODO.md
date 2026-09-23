@@ -8,7 +8,7 @@ Open work, highest priority first. Context for each item is in `HANDOFF.md`.
 
 ## Robustness
 
-- [ ] **Blank window after a failed load.** With a hanging load or a crashed web process, the 2 s safety net shows the window but it stays blank; the user can only close it. Consider a native fallback message, or reloading the webview once when `Finished` hasn't fired by the timeout.
+- [ ] **Load that fails twice.** The 2 s safety net retries the load once. If that retry also fails, the window still shows blank. A native fallback message would cover it. Also, only the crashed-web-process case was reproduced; a hanging load wasn't.
 - [ ] **Web process crash after startup** isn't handled (e.g. a GPU-driver crash mid-session leaves a dead view). Consider listening for WebKit's `web-process-terminated` and reloading.
 - [ ] **Live theme switching.** Theme-name changes are followed via `connect_gtk_theme_name_notify`, but switching Cinnamon from dark to light while running wasn't tested. The code only ever *sets* prefer-dark, never clears it.
 

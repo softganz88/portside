@@ -44,9 +44,9 @@ No ESLint, Prettier or rustfmt config exists; `tsc` (strict, `noUnusedLocals/Par
 
 - **Only `npm run tauri build` embeds the frontend.** The debug binary and a bare `cargo build --release` load `devUrl` (`http://localhost:1420`) and show "Could not connect" without Vite running.
 - **Startup window visibility:**
-  - The window starts hidden (`visible: false`) and is shown on `PageLoadEvent::Finished`, with an unconditional show after 2 s.
+  - The window starts hidden (`visible: false`) and is shown on `PageLoadEvent::Finished`, with an unconditional show after 2 s. That show first navigates to the app URL once if `Finished` never fired.
   - Keep `StateFlags::VISIBLE` excluded from the window-state plugin. Showing earlier brings back WebKit's 500 ms startup IPC stall.
-  - Removing the 2 s fallback leaves a hung load or crashed web process running with no window.
+  - Removing the 2 s fallback leaves a hung load or crashed web process running with no window. Its re-navigate must stay a `navigate`, not `reload()`. An early web-process crash leaves no URL to reload, and the window stays blank. To test it, `kill -9` the `WebKitWebProcess` child right after launch.
 - **Dark mode on Cinnamon** comes from the GTK theme name (`follow_gtk_dark_theme` in `lib.rs`), because the portal reports "no preference". Test light with `GTK_THEME=Mint-Y ./src-tauri/target/release/portside` rather than changing system settings.
 - **Scrollbars:** keep the CSS `::-webkit-scrollbar` rules. WebKitGTK's native overlay scrollbars paint above modal `<dialog>`s.
 - **Timing:** measure with temporary in-app marks (`eprintln!` from Rust and a JS `mark` command after a double `requestAnimationFrame`) on a throwaway branch. Screen polling and `strace` both change the startup timing.
