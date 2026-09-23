@@ -14,7 +14,7 @@ sudo apt install ./src-tauri/target/release/bundle/deb/Portside_0.1.1_amd64.deb 
 ./src-tauri/target/release/bundle/appimage/Portside_0.1.1_amd64.AppImage
 ```
 
-Prefer the `.deb`: it starts in about half the time (see [Limits](#limits)).
+Prefer the `.deb`: it starts faster (about 0.6 s against 0.9–1.0 s; see [Limits](#limits)).
 
 ## Build
 
@@ -52,6 +52,8 @@ src/
   Table.tsx     socket grid;  Details.tsx  details panel;  Dialog.tsx  modals
   logic.ts      pure filter/sort/merge/format helpers (+ logic.test.ts)
   styles.css    design tokens (DESIGN.md §4) and layout
+scripts/
+  repack-appimage.sh  post-build AppImage repack for faster startup (npm run repack-appimage)
 docs/screenshots/  dark, light, confirm dialog, narrow layout
 ```
 

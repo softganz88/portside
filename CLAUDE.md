@@ -10,6 +10,7 @@ From the repo root:
 |---|---|
 | Run in development (Vite on :1420 + debug app) | `npm run tauri dev` |
 | Release binary + `.deb` + AppImage (`src-tauri/target/release/bundle/`) | `npm run tauri build` |
+| Repack that AppImage for faster startup (run after every `tauri build`) | `npm run repack-appimage` |
 | Frontend type-check + bundle only | `npm run build` (`tsc && vite build`) |
 | Frontend tests (Vitest) | `npm test` |
 | Type-check only | `npx tsc --noEmit` |
@@ -52,4 +53,6 @@ No ESLint, Prettier or rustfmt config exists; `tsc` (strict, `noUnusedLocals/Par
 - **Driving the app with xdotool:**
   - `search --pid` also matches windows without `_NET_WM_PID` (e.g. Nemo showing this folder), so verify with `getwindowpid` and skip the 10×10 leader window.
   - `key --window` sends synthetic events WebKit ignores; activate the window and use plain `xdotool key`.
+- **Releases:** the version lives in `package.json`, `src-tauri/Cargo.toml` and `src-tauri/tauri.conf.json`, so bump all three together; bundle filenames come from `tauri.conf.json`. Ship the AppImage only after `npm run repack-appimage`, because Tauri's own AppImage is ~0.4 s slower to start and Tauri can't pass the packing options itself.
+- **AppImage flags:** `--appimage-offset` and `--appimage-extract` return without launching. `--appimage-extract-and-run` and any non-runtime flag (even `--help`) launch Portside, which doesn't exit on its own.
 - **Bundle identifier** stays `dev.portside.Portside`. A `.app` suffix triggers a Tauri warning, which breaks the zero-warning gate.
