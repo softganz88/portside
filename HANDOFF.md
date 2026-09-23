@@ -62,7 +62,7 @@ Wording SPEC doesn't specify, chosen during the build (change freely):
 
 ## Gotchas for whoever picks this up
 
-- **Don't time startup by polling the screen.** Full-band `get_image` polling slowed the app and roughly doubled the numbers. Use in-app marks instead: temporarily `eprintln!("MARK {ms} name")` at `setup`, `on_page_load`, and a `mark` command invoked from JS after a double `requestAnimationFrame` post-first-scan. Launch 20× and diff against the exec timestamp. Don't commit the marks.
+- **Don't time startup by polling the screen.** Full-band `get_image` polling slowed the app and roughly doubled the numbers. Use in-app marks instead: temporarily `eprintln!("MARK {ms} name")` at `setup`, `on_page_load`, and a `mark` command invoked from JS after a double `requestAnimationFrame` post-first-scan. Launch 20× and diff against the exec timestamp. Don't commit the marks. The `startup-bench` skill (`.claude/skills/startup-bench/bench.sh`) automates all of this, including rebuilding the original checkout afterwards.
 - **strace changes the race.** Full `strace -f` makes every launch stall; `strace -k` makes none stall. Use plain `-f -tt -T` and look for the main thread's `ETIMEDOUT` futex. Ignore JavaScriptCore `pas_scavenger` and GLib thread-pool timeouts; they're idle noise.
 - **Window lookup with xdotool.** `xdotool search --pid` also returns windows without `_NET_WM_PID` (e.g. Nemo showing the "Portside" folder). Check `xdotool getwindowpid` and skip the 10×10 GTK leader window. `xdotool key --window` sends synthetic events that WebKit ignores; activate the window and use plain `xdotool key`.
 - **Debug build loads `devUrl`** (`http://localhost:1420`); only `npm run tauri build` embeds the frontend. A bare `cargo build --release` produces a binary that also tries `devUrl`.
@@ -86,6 +86,6 @@ Later work, each measured before and after with in-app marks:
 - list windowing for 1,000+ sockets, plus a fix keeping the sort headers in the Tab order
 - the AppImage repack step
 
-Releases: v0.1.0 to v0.1.3 on GitHub (`softganz88/portside`). v0.1.2 shipped the mixed-compression AppImage; v0.1.3 ships the fully uncompressed one.
+Releases: v0.1.0 to v0.1.3 on GitHub (`softganz88/portside`). Cut the next one with `/release X.Y.Z` (`.claude/skills/release/`); its `--publish` step hasn't run against a real release yet. v0.1.2 shipped the mixed-compression AppImage; v0.1.3 ships the fully uncompressed one.
 
 `git log` has one commit per fix.
