@@ -9,9 +9,9 @@ What is listening on this port, and can I stop it? Portside lists every listenin
 Built packages land in `src-tauri/target/release/bundle/`:
 
 ```sh
-sudo apt install ./src-tauri/target/release/bundle/deb/Portside_0.1.2_amd64.deb   # then launch "Portside" from the menu
+sudo apt install ./src-tauri/target/release/bundle/deb/Portside_0.1.3_amd64.deb   # then launch "Portside" from the menu
 # or, without installing:
-./src-tauri/target/release/bundle/appimage/Portside_0.1.2_amd64.AppImage
+./src-tauri/target/release/bundle/appimage/Portside_0.1.3_amd64.AppImage
 ```
 
 Prefer the `.deb`: it starts faster (about 0.6 s against about 0.8 s; see [Limits](#limits)).
