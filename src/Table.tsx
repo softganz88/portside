@@ -131,9 +131,7 @@ export function Table(p: Props) {
         aria-label="Listening sockets"
         aria-rowcount={rows.length + 1}
         aria-busy={p.rows === null}
-        // The roving tab stop may be scrolled out of the DOM; then the grid holds it and passes focus on.
-        tabIndex={tabKey && !tabRendered ? 0 : -1}
-        onFocus={(e) => e.target === e.currentTarget && tabKey && !tabRendered && p.onFocusRow(tabKey)}
+        tabIndex={-1}
         onKeyDown={p.onKeyDown}
       >
         <div role="row" className="row head">
@@ -153,6 +151,9 @@ export function Table(p: Props) {
             );
           })}
         </div>
+        {/* The roving tab stop may be scrolled out of the DOM; this stand-in, placed after the
+            header so the Tab order stays header → rows, holds it and passes focus to the row. */}
+        {tabKey && !tabRendered && <div tabIndex={0} onFocus={() => p.onFocusRow(tabKey)} />}
         {p.rows === null &&
           Array.from({ length: 6 }, (_, i) => <div key={i} className="row skeleton" aria-hidden="true" />)}
         {first > 0 && <div style={{ height: first * ROW_HEIGHT }} aria-hidden="true" />}
