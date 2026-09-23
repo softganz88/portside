@@ -14,7 +14,7 @@ sudo apt install ./src-tauri/target/release/bundle/deb/Portside_0.1.2_amd64.deb 
 ./src-tauri/target/release/bundle/appimage/Portside_0.1.2_amd64.AppImage
 ```
 
-Prefer the `.deb`: it starts faster (about 0.6 s against 0.9–1.0 s; see [Limits](#limits)).
+Prefer the `.deb`: it starts faster (about 0.6 s against about 0.8 s; see [Limits](#limits)).
 
 ## Build
 
@@ -82,6 +82,6 @@ Filter tips: `30` matches ports starting with 30; `:8080` matches port 8080 exac
 
 ## Limits
 
-Startup: the `.deb` (or the release binary) shows a populated list in about 0.6 s. The AppImage takes about 0.9–1.0 s, and roughly one launch in four goes slightly over 1 s. Every launch it mounts its image and decompresses the bundled WebKit, so `npm run repack-appimage` stores the three largest WebKit libraries uncompressed (a 178 MB file instead of 76 MB). Install the `.deb` if startup time matters.
+Startup: the `.deb` (or the release binary) shows a populated list in about 0.6 s. The AppImage takes about 0.8 s: it mounts its image on every launch, so `npm run repack-appimage` stores it uncompressed to skip decompressing the bundled WebKit. That makes the file 225 MB instead of 76 MB. Install the `.deb` if startup time or download size matters.
 
 Sockets owned by other users show as **Restricted**: without root, `/proc/<pid>/fd` of other users can't be read, so their process can't be identified or stopped. This is by design.

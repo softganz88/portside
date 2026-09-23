@@ -2,12 +2,9 @@
 
 Open work, highest priority first. Context for each item is in `HANDOFF.md`.
 
-## Acceptance gaps
+## Distribution
 
-- [ ] **AppImage cold start is borderline.** After `npm run repack-appimage` it's ~0.9–1.0 s, and about 1 launch in 4 goes over the 1 s AC12 target (the `.deb` meets it at ~0.57 s). Options:
-  - repack fully uncompressed: 225 MB, ~0.78 s, 0 of 20 launches over 1 s. It's a one-line change in `scripts/repack-appimage.sh`.
-  - an AppImage that uses the system WebKitGTK instead of bundling it
-  - keep it as is, with the `.deb` as the primary artifact (already stated in the README)
+- [ ] **AppImage size.** Storing the squashfs uncompressed for startup speed makes the AppImage 225 MB (76 MB compressed). An AppImage that uses the system WebKitGTK would be small and fast but lose portability; otherwise keep pointing size-sensitive users at the `.deb` (3.5 MB).
 
 ## Robustness
 
