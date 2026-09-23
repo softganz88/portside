@@ -6,6 +6,7 @@ mod stop;
 use model::{Ownership, Proto, Row, ScanError, ScanResult, StopResult};
 use std::collections::HashMap;
 use tauri::webview::PageLoadEvent;
+use tauri::Manager;
 use tauri_plugin_window_state::StateFlags;
 
 fn scan_sockets_inner() -> Result<ScanResult, ScanError> {
@@ -112,9 +113,17 @@ pub fn run() {
                 let _ = webview.window().show();
             }
         })
-        .setup(|_| {
+        .setup(|app| {
             #[cfg(target_os = "linux")]
             follow_gtk_dark_theme();
+            // Safety net: a load that hangs or a crashed web process never reaches Finished,
+            // which would leave the app running with no window. Showing twice is a no-op.
+            if let Some(window) = app.get_webview_window("main") {
+                tauri::async_runtime::spawn(async move {
+                    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                    let _ = window.show();
+                });
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![scan_sockets, stop_process])
