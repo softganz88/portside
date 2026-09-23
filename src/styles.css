@@ -388,7 +388,6 @@ kbd {
   flex: 1;
   min-width: 0;
   overflow: auto;
-  scroll-padding-top: 32px;
 }
 
 .row {

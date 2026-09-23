@@ -1,7 +1,13 @@
-import { memo, type KeyboardEvent, type RefObject } from "react";
+import { memo, useLayoutEffect, useState, type KeyboardEvent, type RefObject } from "react";
+import { flushSync } from "react-dom";
 import { displayName, type Sort, type SortCol } from "./logic";
 import { LockIcon } from "./icons";
 import type { Row } from "./types";
+
+/** Every row, header included, is exactly this tall (DESIGN §3); windowing relies on it. */
+export const ROW_HEIGHT = 32;
+/** Rows rendered beyond each edge of the viewport, so fast scrolling doesn't show blanks. */
+const OVERSCAN = 10;
 
 const COLS: { col: SortCol; label: string; num?: boolean }[] = [
   { col: "port", label: "Port", num: true },
@@ -14,6 +20,7 @@ const COLS: { col: SortCol; label: string; num?: boolean }[] = [
 
 interface RowProps {
   row: Row;
+  index: number;
   selected: boolean;
   tabbable: boolean;
   isNew: boolean;
@@ -21,13 +28,14 @@ interface RowProps {
   onSelect: (key: string) => void;
 }
 
-const RowView = memo(function RowView({ row, selected, tabbable, isNew, stopping, onSelect }: RowProps) {
+const RowView = memo(function RowView({ row, index, selected, tabbable, isNew, stopping, onSelect }: RowProps) {
   const cls = `row${selected ? " selected" : ""}${isNew ? " new" : ""}`;
   return (
     <div
       role="row"
       className={cls}
       aria-selected={selected}
+      aria-rowindex={index + 2}
       tabIndex={tabbable ? 0 : -1}
       data-key={row.key}
       onClick={() => onSelect(row.key)}
@@ -71,12 +79,35 @@ interface Props {
   onSort: (col: SortCol) => void;
   onSelect: (key: string) => void;
   onKeyDown: (e: KeyboardEvent<HTMLDivElement>) => void;
+  onFocusRow: (key: string) => void;
   onClearFilter: () => void;
 }
 
 export function Table(p: Props) {
   const rows = p.rows ?? [];
   const tabKey = rows.some((r) => r.key === p.selectedKey) ? p.selectedKey : rows[0]?.key;
+
+  // Windowing: only rows near the viewport are in the DOM; spacers stand in for the rest.
+  const [view, setView] = useState({ top: 0, height: 0 });
+  useLayoutEffect(() => {
+    const el = p.gridRef.current;
+    if (!el) return;
+    const update = () => setView({ top: el.scrollTop, height: el.clientHeight });
+    update();
+    const resize = new ResizeObserver(update);
+    resize.observe(el);
+    // Render synchronously so a row scrolled to from the keyboard exists before it's focused.
+    const onScroll = () => flushSync(update);
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      resize.disconnect();
+      el.removeEventListener("scroll", onScroll);
+    };
+  }, [p.gridRef]);
+  const first = Math.max(0, Math.floor(view.top / ROW_HEIGHT) - 1 - OVERSCAN);
+  const last = Math.min(rows.length, Math.ceil((view.top + view.height) / ROW_HEIGHT) + OVERSCAN);
+  const tabIndex = rows.findIndex((r) => r.key === tabKey);
+  const tabRendered = tabIndex >= first && tabIndex < last;
 
   let empty = null;
   if (p.rows && !p.failed && rows.length === 0) {
@@ -100,7 +131,9 @@ export function Table(p: Props) {
         aria-label="Listening sockets"
         aria-rowcount={rows.length + 1}
         aria-busy={p.rows === null}
-        tabIndex={-1}
+        // The roving tab stop may be scrolled out of the DOM; then the grid holds it and passes focus on.
+        tabIndex={tabKey && !tabRendered ? 0 : -1}
+        onFocus={(e) => e.target === e.currentTarget && tabKey && !tabRendered && p.onFocusRow(tabKey)}
         onKeyDown={p.onKeyDown}
       >
         <div role="row" className="row head">
@@ -122,11 +155,12 @@ export function Table(p: Props) {
         </div>
         {p.rows === null &&
           Array.from({ length: 6 }, (_, i) => <div key={i} className="row skeleton" aria-hidden="true" />)}
-        {/* ponytail: no virtualization; add windowing if a 1000-row render measures >150 ms */}
-        {rows.map((r) => (
+        {first > 0 && <div style={{ height: first * ROW_HEIGHT }} aria-hidden="true" />}
+        {rows.slice(first, last).map((r, i) => (
           <RowView
             key={r.key}
             row={r}
+            index={first + i}
             selected={r.key === p.selectedKey}
             tabbable={r.key === tabKey}
             isNew={p.newKeys.has(r.key)}
@@ -134,6 +168,7 @@ export function Table(p: Props) {
             onSelect={p.onSelect}
           />
         ))}
+        {last < rows.length && <div style={{ height: (rows.length - last) * ROW_HEIGHT }} aria-hidden="true" />}
       </div>
       {empty}
     </div>

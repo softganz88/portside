@@ -18,7 +18,7 @@ import {
   type ProtoFilter,
   type SortCol,
 } from "./logic";
-import { Table } from "./Table";
+import { ROW_HEIGHT, Table } from "./Table";
 import { Details } from "./Details";
 import { Dialog, ShortcutsDialog } from "./Dialog";
 import { CheckIcon, PauseIcon, PlayIcon, RefreshIcon, SearchIcon, XIcon } from "./icons";
@@ -150,10 +150,20 @@ export default function App() {
     toastTimer.current = window.setTimeout(() => setToast(null), 3000);
   }, []);
 
+  // Rows are windowed, so the target may not be in the DOM: scroll by index, then focus.
   const focusRow = (key: string) => {
-    const el = gridRef.current?.querySelector<HTMLElement>(`[data-key="${CSS.escape(key)}"]`);
-    el?.focus();
-    el?.scrollIntoView({ block: "nearest" });
+    const list = gridRef.current;
+    const i = visible.findIndex((r) => r.key === key);
+    if (!list || i < 0) return;
+    // Row i spans [(i+1)·h, (i+2)·h) in content coordinates; the sticky header covers the first h.
+    if (list.scrollTop > i * ROW_HEIGHT) list.scrollTop = i * ROW_HEIGHT;
+    else if (list.scrollTop < (i + 2) * ROW_HEIGHT - list.clientHeight) list.scrollTop = (i + 2) * ROW_HEIGHT - list.clientHeight;
+    const focus = () => {
+      const el = list.querySelector<HTMLElement>(`[data-key="${CSS.escape(key)}"]`);
+      el?.focus({ preventScroll: true });
+      return !!el;
+    };
+    if (!focus()) requestAnimationFrame(focus);
   };
   const moveTo = (key: string) => {
     setSelected(key);
@@ -249,7 +259,7 @@ export default function App() {
   const onGridKey = (e: NavEvent) => {
     const n = visible.length;
     if (!n || e.ctrlKey || e.altKey || e.metaKey) return;
-    const page = Math.max(1, Math.floor((gridRef.current?.clientHeight ?? 0) / 32) - 1);
+    const page = Math.max(1, Math.floor((gridRef.current?.clientHeight ?? 0) / ROW_HEIGHT) - 1);
     const cur = selIndex;
     const from = cur < 0 ? lastIndex.current : cur;
     const step = cur < 0 ? 0 : 1; // a closed or filtered-out selection lands on the nearest row first
@@ -408,6 +418,7 @@ export default function App() {
           onSort={(col: SortCol) => setSort((s) => nextSort(s, col))}
           onSelect={setSelected}
           onKeyDown={onGridKey}
+          onFocusRow={focusRow}
           onClearFilter={clearFilter}
         />
         <Details
