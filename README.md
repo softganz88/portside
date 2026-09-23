@@ -4,6 +4,18 @@ What is listening on this port, and can I stop it? Portside lists every listenin
 
 ![Portside, dark theme](docs/screenshots/main-dark.png)
 
+## Install
+
+Built packages land in `src-tauri/target/release/bundle/`:
+
+```sh
+sudo apt install ./src-tauri/target/release/bundle/deb/Portside_0.1.0_amd64.deb   # then launch "Portside" from the menu
+# or, without installing:
+./src-tauri/target/release/bundle/appimage/Portside_0.1.0_amd64.AppImage
+```
+
+Prefer the `.deb`: it starts in about half the time (see [Limits](#limits)).
+
 ## Build
 
 Requires Rust (stable), Node 20+, and the Tauri Linux prerequisites:
@@ -11,16 +23,38 @@ Requires Rust (stable), Node 20+, and the Tauri Linux prerequisites:
 ```sh
 sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev build-essential file libssl-dev
 npm install
-npm run tauri dev       # run in development
+npm run tauri dev       # run in development (Vite on :1420 + debug binary)
 npm run tauri build     # release binary + .deb + AppImage under src-tauri/target/release/bundle/
 ```
 
-Checks:
+## Tests
 
 ```sh
 cd src-tauri && cargo test && cargo clippy --all-targets -- -D warnings && cd ..
 npx tsc --noEmit && npx vitest run
 ```
+
+- `cargo test`: `/proc/net` parsers against fixture copies in `src-tauri/tests/fixtures/`, stat/cmdline/passwd parsing, the stop flow against real spawned `sleep` processes, and one live scan of this machine.
+- `vitest run`: filter, sort, diff-merge, address/URL formatting and dialog wording in `src/logic.ts`.
+
+## Project layout
+
+```
+src-tauri/src/
+  lib.rs        Tauri commands (scan_sockets, stop_process), window/theme setup
+  model.rs      IPC types; mirrored by src/types.ts, so change both together
+  proc_net.rs   /proc/net/{tcp,tcp6,udp,udp6} parser
+  procs.rs      inode→PID map, comm/cmdline/start time, /etc/passwd
+  stop.rs       start-time check, SIGTERM/SIGKILL, 250 ms exit polling
+src/
+  App.tsx       state, 2 s refresh loop, shortcuts, dialogs, toasts
+  Table.tsx     socket grid;  Details.tsx  details panel;  Dialog.tsx  modals
+  logic.ts      pure filter/sort/merge/format helpers (+ logic.test.ts)
+  styles.css    design tokens (DESIGN.md §4) and layout
+docs/screenshots/  dark, light, confirm dialog, narrow layout
+```
+
+`SPEC.md` (behaviour) and `DESIGN.md` (visuals) are the source of truth. See `HANDOFF.md` for current state and `TODO.md` for open work.
 
 ## Keyboard shortcuts
 
