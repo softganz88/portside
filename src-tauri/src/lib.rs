@@ -5,6 +5,8 @@ mod stop;
 
 use model::{Ownership, Proto, Row, ScanError, ScanResult, StopResult};
 use std::collections::HashMap;
+use tauri::webview::PageLoadEvent;
+use tauri_plugin_window_state::StateFlags;
 
 fn scan_sockets_inner() -> Result<ScanResult, ScanError> {
     let files = proc_net::read_all();
@@ -95,9 +97,21 @@ fn follow_gtk_dark_theme() {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_window_state::Builder::default().build())
+        // Restore size/position but not visibility: the window stays hidden until the page loads.
+        .plugin(
+            tauri_plugin_window_state::Builder::default()
+                .with_state_flags(StateFlags::all() - StateFlags::VISIBLE)
+                .build(),
+        )
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_opener::init())
+        // Showing the window before WebKit's web process is up makes the UI process wait out a
+        // 500 ms sync-IPC timeout on ~half of launches; showing it once the page has loaded avoids it.
+        .on_page_load(|webview, payload| {
+            if payload.event() == PageLoadEvent::Finished {
+                let _ = webview.window().show();
+            }
+        })
         .setup(|_| {
             #[cfg(target_os = "linux")]
             follow_gtk_dark_theme();
