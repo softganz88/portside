@@ -93,11 +93,14 @@ Shows for the selected row: process name (large), full address, protocol + famil
 3. On Stop: send SIGTERM. The row shows a `Stopping…` state.
 4. Poll every 250 ms for up to 3 s for the PID to exit.
 5. Exited → toast "Stopped node (48213)"; rows removed on the next scan.
-6. Still alive after 3 s → dialog "node did not exit." Buttons: **Keep running** (default focus) / **Force stop**. Force stop sends SIGKILL, then same 3 s poll.
+6. Still alive after 3 s → dialog "node did not exit." Buttons: **Keep running** (default focus) / **Force stop**. Force stop sends SIGKILL, then same 3 s poll. If another dialog is open by then, "node did not exit." shows as the inline error instead.
 7. Failure (EPERM, ESRCH, etc.) → inline error in the details panel with the reason in plain words.
 
 Stop is **disabled** (with tooltip explaining why) when:
-- PID is unknown (`other` or `kernel` ownership) — tooltip: "Owned by another user. Portside does not run with elevated rights."
+- PID is unknown. Tooltip by ownership:
+  - `other` (different uid): "Owned by another user. Portside does not run with elevated rights."
+  - `own` (same uid, but the process can't be read, e.g. non-dumpable): "Can't identify this process. Portside does not run with elevated rights."
+  - `kernel`: "This socket belongs to the kernel; there is no process to stop."
 - The PID is Portside itself.
 - The PID is 1.
 

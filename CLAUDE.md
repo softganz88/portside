@@ -26,7 +26,7 @@ No ESLint, Prettier or rustfmt config exists; `tsc` (strict, `noUnusedLocals/Par
   - `procs.rs`: inode→PID, comm/cmdline/start time, passwd.
   - `stop.rs`: start-time re-check → signal → 250 ms polling.
   - `lib.rs`: commands and window/theme setup.
-- **Per-process failures degrade, never error.** An unreadable PID becomes a `Restricted` row (`ownership: "other"`). `scan_sockets` errors only when all four `/proc/net` tables are unreadable.
+- **Per-process failures degrade, never error.** An unreadable PID becomes a `Restricted` row. Ownership comes from the socket's uid (`own` = Portside's uid), not from whether the PID resolved. `scan_sockets` errors only when all four `/proc/net` tables are unreadable.
 - **IPC contract:** `src-tauri/src/model.rs` ↔ `src/types.ts` are hand-mirrored. Change both in the same commit.
 - **Keep Tauri commands `async`.** A sync command runs on the GTK main thread and stalls the UI.
 - **Frontend:** `src/logic.ts` is pure and unit-tested; put new filter/sort/format rules there with tests. `App.tsx` owns state and the refresh loop. `Table.tsx` renders a windowed list.
