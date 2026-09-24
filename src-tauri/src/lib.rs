@@ -70,7 +70,13 @@ fn scan_sockets_inner() -> Result<ScanResult, ScanError> {
 
 #[tauri::command]
 async fn scan_sockets() -> Result<ScanResult, ScanError> {
-    scan_sockets_inner()
+    // scan_sockets_inner does blocking /proc IO; run it off the tokio worker
+    // threads so it doesn't stall other async tasks (the command is `async`
+    // precisely so it doesn't block the GTK main thread, but a sync body
+    // inside an async fn still blocks whichever tokio thread runs it).
+    tauri::async_runtime::spawn_blocking(scan_sockets_inner)
+        .await
+        .expect("scan_sockets_inner panicked")
 }
 
 #[tauri::command]
