@@ -138,11 +138,16 @@ export default function App() {
   const selIndex = visible.findIndex((r) => r.key === selected);
   if (selIndex >= 0) lastIndex.current = selIndex;
 
-  // W1: a filter that leaves exactly one match selects it.
-  const onlyMatch = visible.length === 1 && (filter.trim() || proto !== "All") ? visible[0].key : null;
+  // W1: editing the filter or protocol down to exactly one match selects it.
+  // Keyed on [filter, proto] only (not `visible`), so a row closing on a
+  // later scan — which can also shrink the visible set to one — never jumps
+  // the selection (SPEC §3.2: selection only moves on an arrow key then).
+  const visibleRef = useRef(visible);
+  visibleRef.current = visible;
   useEffect(() => {
-    if (onlyMatch) setSelected(onlyMatch);
-  }, [onlyMatch]);
+    const cur = visibleRef.current;
+    if (cur.length === 1 && (filter.trim() || proto !== "All")) setSelected(cur[0].key);
+  }, [filter, proto]);
 
   const showToast = useCallback((text: string, ok = false) => {
     setToast({ text, ok });
