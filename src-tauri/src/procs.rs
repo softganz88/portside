@@ -68,8 +68,14 @@ pub fn cmdline_from_bytes(bytes: &[u8]) -> String {
     String::from_utf8_lossy(&bytes).trim_end().to_string()
 }
 
+/// Lossily decodes `/proc/<pid>/comm` contents (SPEC §5: never crash on
+/// non-UTF-8 bytes) and trims the trailing newline.
+fn comm_from_bytes(bytes: &[u8]) -> String {
+    String::from_utf8_lossy(bytes).trim_end_matches('\n').to_string()
+}
+
 fn read_comm(pid: i32) -> Option<String> {
-    fs::read_to_string(format!("/proc/{pid}/comm")).ok().map(|s| s.trim_end_matches('\n').to_string())
+    fs::read(format!("/proc/{pid}/comm")).ok().map(|b| comm_from_bytes(&b))
 }
 
 fn read_cmdline(pid: i32) -> String {
@@ -151,6 +157,12 @@ mod tests {
     fn cmdline_replaces_nul_and_trims() {
         let bytes = b"node\0server.js\0--port\x00 3000\0";
         assert_eq!(cmdline_from_bytes(bytes), "node server.js --port  3000");
+    }
+
+    #[test]
+    fn comm_lossy_decodes_non_utf8_and_trims_newline() {
+        let bytes = [b'x', 0xFF, b'y', b'\n'];
+        assert_eq!(comm_from_bytes(&bytes), "x\u{FFFD}y");
     }
 
     #[test]
