@@ -56,6 +56,10 @@ describe("matchesFilter", () => {
     expect(matchesFilter(row({ pid: null, process: null, ownership: "other" }), "restr", "All")).toBe(true);
     expect(matchesFilter(row({ pid: null, process: null, ownership: "kernel" }), "kern", "All")).toBe(true);
   });
+  it("a lone ':' matches everything, not just IPv6 addresses", () => {
+    expect(matchesFilter(row({ address: "0.0.0.0", family: "IPv4" }), ":", "All")).toBe(true);
+    expect(matchesFilter(row({ address: "[::1]", family: "IPv6" }), ":", "All")).toBe(true);
+  });
   it("ANDs with protocol", () => {
     expect(matchesFilter(row({ proto: "UDP" }), "", "TCP")).toBe(false);
     expect(matchesFilter(row({ proto: "UDP" }), "", "UDP")).toBe(true);

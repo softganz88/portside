@@ -16,7 +16,7 @@ export function displayName(row: Row): string {
 export function matchesFilter(row: Row, text: string, proto: ProtoFilter): boolean {
   if (proto !== "All" && row.proto !== proto) return false;
   const t = text.trim().toLowerCase();
-  if (!t) return true;
+  if (!t || t === ":") return true;
   if (/^:\d+$/.test(t)) return row.port === Number(t.slice(1));
   if (String(row.port).startsWith(t)) return true;
   return [displayName(row), row.cmdline, row.user, row.address].some((f) =>
