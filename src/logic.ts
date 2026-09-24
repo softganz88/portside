@@ -81,12 +81,11 @@ export interface Merge {
   /** Next rows, reusing previous objects for unchanged rows so memoized row components skip. */
   rows: Row[];
   added: string[];
-  removed: boolean;
 }
 
 /** `prev` is null on the very first scan, which reports nothing as added. */
 export function mergeScan(prev: readonly Row[] | null, next: readonly Row[]): Merge {
-  if (!prev) return { rows: [...next], added: [], removed: false };
+  if (!prev) return { rows: [...next], added: [] };
   const old = new Map(prev.map((r) => [r.key, r]));
   const added: string[] = [];
   const rows = next.map((r) => {
@@ -97,8 +96,7 @@ export function mergeScan(prev: readonly Row[] | null, next: readonly Row[]): Me
     }
     return sameRow(o, r) ? o : r;
   });
-  const nextKeys = new Set(next.map((r) => r.key));
-  return { rows, added, removed: prev.some((r) => !nextKeys.has(r.key)) };
+  return { rows, added };
 }
 
 export function copyAddress(row: Row): string {

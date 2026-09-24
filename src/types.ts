@@ -29,9 +29,6 @@ export interface ScanResult {
   selfPid: number;
 }
 
-/** `invoke("scan_sockets")` rejects with this message string when /proc/net is unreadable. */
-export type ScanError = string;
-
 export type StopResult =
   | { kind: "exited" }
   | { kind: "stillRunning" }

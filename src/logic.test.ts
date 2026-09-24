@@ -115,7 +115,7 @@ describe("mergeScan", () => {
   const a = row({ port: 1 });
   const b = row({ port: 2 });
   it("reports nothing as added on the first scan", () => {
-    expect(mergeScan(null, [a, b])).toEqual({ rows: [a, b], added: [], removed: false });
+    expect(mergeScan(null, [a, b])).toEqual({ rows: [a, b], added: [] });
   });
   it("reuses unchanged row objects", () => {
     const m = mergeScan([a, b], [{ ...a }, { ...b, user: "root" }]);
@@ -123,13 +123,11 @@ describe("mergeScan", () => {
     expect(m.rows[1]).not.toBe(b);
     expect(m.rows[1].user).toBe("root");
     expect(m.added).toEqual([]);
-    expect(m.removed).toBe(false);
   });
-  it("reports added keys and removals", () => {
+  it("reports added keys", () => {
     const c = row({ port: 3 });
     const m = mergeScan([a, b], [a, c]);
     expect(m.added).toEqual([c.key]);
-    expect(m.removed).toBe(true);
   });
 });
 
