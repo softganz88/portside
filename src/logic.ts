@@ -114,6 +114,7 @@ export function stopBlocked(row: Row, selfPid: number | null): string | null {
   }
   if (row.pid === selfPid) return "This is Portside itself.";
   if (row.pid === 1) return "PID 1 is the init process and can't be stopped.";
+  if (row.startTicks === null) return "Process changed — refresh and try again.";
   return null;
 }
 

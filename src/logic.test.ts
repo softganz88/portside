@@ -155,6 +155,9 @@ describe("stop confirmation and blocking", () => {
     expect(stopBlocked(row({ pid: null, ownership: "kernel" }), 5)).toMatch(/kernel/);
     expect(stopBlocked(row({ pid: 5 }), 5)).toBe("This is Portside itself.");
     expect(stopBlocked(row({ pid: 1 }), 5)).toBe("PID 1 is the init process and can't be stopped.");
+    expect(stopBlocked(row({ pid: 42, startTicks: null }), 5)).toBe(
+      "Process changed — refresh and try again.",
+    );
     expect(stopBlocked(row({ pid: 42 }), 5)).toBeNull();
   });
 });
