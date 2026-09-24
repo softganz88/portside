@@ -149,11 +149,25 @@ mod tests {
 
     #[test]
     fn real_scan_returns_rows() {
+        // Bind a real listening socket so the scan has a guaranteed row to find,
+        // rather than relying on the host already having one (fails in bare CI).
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("bind listener");
+        let port = listener.local_addr().expect("local_addr").port();
+
         let start = std::time::Instant::now();
         let result = scan_sockets_inner();
         let elapsed = start.elapsed();
         println!("scan_sockets: {} rows in {:?}", result.as_ref().map(|r| r.rows.len()).unwrap_or(0), elapsed);
         let result = result.expect("scan should succeed on this machine");
-        assert!(!result.rows.is_empty(), "expected at least one listening socket");
+
+        let self_pid = std::process::id() as i32;
+        let row = result
+            .rows
+            .iter()
+            .find(|r| r.proto == Proto::Tcp && r.address == "127.0.0.1" && r.port == port)
+            .unwrap_or_else(|| panic!("expected a TCP row for 127.0.0.1:{port}"));
+        assert_eq!(row.pid, Some(self_pid));
+
+        drop(listener);
     }
 }
