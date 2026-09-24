@@ -62,6 +62,8 @@ export default function App() {
   const [stopping, setStopping] = useState<ReadonlySet<number>>(new Set());
   const [stopError, setStopError] = useState<{ key: string; msg: string } | null>(null);
   const [dialog, setDialog] = useState<DialogState>(null);
+  const dialogRef = useRef(dialog);
+  dialogRef.current = dialog;
   const [toast, setToast] = useState<{ text: string; ok: boolean } | null>(null);
   const [spinKey, setSpinKey] = useState(0);
 
@@ -235,7 +237,12 @@ export default function App() {
           showToast(`Stopped ${displayName(row)} (${pid})`, true);
           break;
         case "stillRunning":
-          setDialog({ kind: "escalate", row });
+          // Up to 3 s have passed since Stop was sent; the user may have opened
+          // another dialog in the meantime. Only pop the escalate dialog when
+          // nothing else is open, otherwise report it inline instead of
+          // clobbering whatever the user is looking at.
+          if (dialogRef.current === null) setDialog({ kind: "escalate", row });
+          else fail(`${displayName(row)} did not exit.`);
           break;
         case "processChanged":
           fail("Process changed — refresh and try again.");
