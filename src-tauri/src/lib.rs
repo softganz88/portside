@@ -18,7 +18,7 @@ fn scan_sockets_inner() -> Result<ScanResult, ScanError> {
 
     let inode_pid = procs::inode_to_pid_map();
     let users = procs::load_users();
-    let btime = procs::boot_time_secs().unwrap_or(0);
+    let btime = procs::boot_time_secs();
     let clk_tck = procs::clk_tck();
     let mut proc_cache: HashMap<i32, procs::ProcInfo> = HashMap::new();
 

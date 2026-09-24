@@ -94,10 +94,15 @@ pub fn clk_tck() -> i64 {
 
 /// Looks up comm/cmdline/start time for one pid. `btime_secs`/`clk_tck` are
 /// scanned once per scan and passed in rather than re-read per pid.
-pub fn proc_info(pid: i32, btime_secs: i64, clk_tck: i64) -> ProcInfo {
-    let (start_ticks, started_ms) = match read_stat_state_ticks(pid) {
-        Some((_, ticks)) => (Some(ticks), Some(btime_secs * 1000 + (ticks as i64 * 1000 / clk_tck.max(1)))),
-        None => (None, None),
+/// `btime_secs` is `None` when `/proc/stat` couldn't be read; `started_ms`
+/// is then `None` too, rather than misreporting the Unix epoch.
+pub fn proc_info(pid: i32, btime_secs: Option<i64>, clk_tck: i64) -> ProcInfo {
+    let (start_ticks, started_ms) = match (read_stat_state_ticks(pid), btime_secs) {
+        (Some((_, ticks)), Some(btime_secs)) => {
+            (Some(ticks), Some(btime_secs * 1000 + (ticks as i64 * 1000 / clk_tck.max(1))))
+        }
+        (Some((_, ticks)), None) => (Some(ticks), None),
+        (None, _) => (None, None),
     };
     ProcInfo { comm: read_comm(pid), cmdline: read_cmdline(pid), started_ms, start_ticks }
 }
@@ -165,6 +170,14 @@ mod tests {
         assert_eq!(map.get(&0), Some(&"root".to_string()));
         assert_eq!(map.get(&1000), Some(&"alice".to_string()));
         assert_eq!(username(9999, &map), "9999");
+    }
+
+    #[test]
+    fn proc_info_leaves_started_ms_none_when_boot_time_unreadable() {
+        let pid = std::process::id() as i32;
+        let info = proc_info(pid, None, clk_tck());
+        assert!(info.start_ticks.is_some(), "expected our own pid's stat to be readable");
+        assert_eq!(info.started_ms, None);
     }
 
     #[test]
