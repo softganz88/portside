@@ -28,7 +28,7 @@ No ESLint, Prettier or rustfmt config exists; `tsc` (strict, `noUnusedLocals/Par
   - `lib.rs`: commands and window/theme setup.
 - **Per-process failures degrade, never error.** An unreadable PID becomes a `Restricted` row. Ownership comes from the socket's uid (`own` = Portside's uid), not from whether the PID resolved. `scan_sockets` errors only when all four `/proc/net` tables are unreadable.
 - **IPC contract:** `src-tauri/src/model.rs` ↔ `src/types.ts` are hand-mirrored. Change both in the same commit.
-- **Keep Tauri commands `async`.** A sync command runs on the GTK main thread and stalls the UI.
+- **Keep Tauri commands `async`.** A sync command runs on the GTK main thread and stalls the UI. Put blocking `/proc` work inside them in `tauri::async_runtime::spawn_blocking` (as `scan_sockets` does).
 - **Frontend:** `src/logic.ts` is pure and unit-tested; put new filter/sort/format rules there with tests. `App.tsx` owns state and the refresh loop. `Table.tsx` renders a windowed list.
 - **Capabilities:** a new plugin API needs its permission added to `src-tauri/capabilities/default.json`, which grants only what's used today.
 - **Dependencies:** crates stay limited to the brief's set (`serde`, `thiserror`, `nix`) plus what's already in `Cargo.toml` (`tokio` time, `gtk` for theme detection). Plain CSS with DESIGN §4 tokens as custom properties; no UI kit, no Tailwind.

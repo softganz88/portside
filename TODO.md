@@ -17,7 +17,7 @@ Open work, highest priority first. Context for each item is in `HANDOFF.md`.
 - [ ] **Narrow layout (< 700 px).** A thin horizontal scrollbar can appear under the action row when the five buttons don't quite fit. Consider shorter labels at narrow widths, or wrapping the row.
 - [ ] **Details panel at default height.** The fields scroll under the pinned actions; a long command pushes USER/STARTED out of view. Consider tighter field spacing (DESIGN §3 allows reading "section gap 16px" as between groups, not every field).
 - [ ] **Grid focus with no rows.** Focusing the empty list draws the focus ring as a thin line under the header. Give the empty-state container the focus ring instead.
-- [ ] **Review wording the build invented** (listed in `HANDOFF.md`): the kernel Stop tooltip, the confirm dialog title, the copy toasts, and the `Delete`-on-blocked-row toast.
+- [ ] **Review wording the build invented** (listed in `HANDOFF.md`): the confirm dialog title, the copy toasts, and the `Delete`-on-blocked-row toast.
 
 ## Housekeeping
 

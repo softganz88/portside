@@ -8,17 +8,17 @@ v1 is feature-complete against SPEC §1 "In scope". All gates pass with zero war
 
 | Gate | Result |
 |---|---|
-| `cargo test` | 14 passed |
+| `cargo test` | 19 passed |
 | `cargo clippy --all-targets -- -D warnings` | clean |
 | `npx tsc --noEmit` | clean |
-| `npx vitest run` | 20 passed |
+| `npx vitest run` | 22 passed |
 | `npm run tauri build` + `npm run repack-appimage` | `.deb` + AppImage, 0 warnings; both launch and populate |
 
 Screenshots in `docs/screenshots/` are from the current build.
 
 ## How it works
 
-- **Backend** (`src-tauri/src/`). `scan_sockets` reads the four `/proc/net` tables, walks `/proc/*/fd` once to map socket inode → PID, and reads comm/cmdline/stat only for PIDs that own a listening socket. It never errors per-process: unreadable data yields a `Restricted` row (`ownership: "other"`). It returns an error only when all four tables are unreadable. A scan takes ~15–35 ms for ~60 sockets. It is an `async` command so it runs off the GTK main thread.
+- **Backend** (`src-tauri/src/`). `scan_sockets` reads the four `/proc/net` tables, walks `/proc/*/fd` once to map socket inode → PID, and reads comm/cmdline/stat only for PIDs that own a listening socket. It never errors per-process: unreadable data yields a `Restricted` row. Ownership comes from the socket's uid (`own` = Portside's uid), not from whether the PID resolved. It returns an error only when all four tables are unreadable. A scan takes ~15–35 ms for ~60 sockets. It is an `async` command so it runs off the GTK main thread, and the `/proc` walk itself runs in `spawn_blocking` so it doesn't hold a tokio worker.
 - **Stop.** `stop_process(pid, expectedStartTime, force)` refuses PID 1 and Portside's own PID, then re-reads `/proc/<pid>/stat` field 22 and returns `processChanged` if it differs (PID reuse guard). Then it signals, and polls every 250 ms for up to 3 s. Exit counts as the stat file being gone, the start time changing, or the process being a zombie. A process already gone counts as `exited` (SPEC §5).
 - **IPC contract.** `src-tauri/src/model.rs` ↔ `src/types.ts`. They are hand-mirrored, so change both.
 - **Frontend** (`src/`). `App.tsx` owns the state. The refresh loop is a chained `setTimeout(2000)` scheduled after each scan resolves, so scans never overlap, and manual refreshes coalesce onto the in-flight scan. `mergeScan` in `logic.ts` reuses row objects when unchanged so memoized rows skip re-render; that's how selection, sort and scroll survive refreshes. Auto-refresh pauses on user pause, minimize (`onResized` + `isMinimized()`) and `visibilitychange`.
@@ -34,14 +34,14 @@ Screenshots in `docs/screenshots/` are from the current build.
 | CSS `::-webkit-scrollbar` styling | WebKitGTK's native overlay scrollbars paint **above** modal `<dialog>`s. |
 | Proto badge has a `--bg` fill | Light `--success` on `--selected` is 4.38:1, under AA. The fill keeps DESIGN's hex values unchanged. |
 | "Copy command" button | SPEC §1 lists copy command line; DESIGN's action list omits it. SPEC wins. |
+| Opener permission scoped to `http://*` (`capabilities/default.json`) | A bare `opener:allow-open-url` grants the command with an empty URL scope, and tauri-plugin-opener rejects every URL then, so Open in browser failed in v0.1.0–0.1.3 behind a generic toast. `browserUrl` only builds `http://` URLs, so that is the whole scope. The opener launches detached: it only errors when no launcher (`xdg-open`, `gio`, `gnome-open`, `kde-open`) can be spawned, not when one exits non-zero. |
 | Sort headers are Tab stops | Otherwise sorting isn't keyboard-reachable; the rows remain a single roving tab stop. |
 | List windowing in `Table.tsx`: only rows near the viewport (10 above/below overscan) are in the DOM; spacers stand in for the rest | At 1,234 sockets, rendering every row made first render 483–599 ms, filter clear 336–396 ms and sort 228–342 ms. With windowing: 72–110, 20–41 and 13–51 ms. Refresh cycles stay 62–91 ms and filter keystrokes 15–32 ms. `focusRow` scrolls by index (fixed 32 px rows) because the target may not be rendered. When the selected row is out of the DOM, a zero-height stand-in after the header holds the Tab stop so the order stays headers → row. |
 
-Wording SPEC doesn't specify, chosen during the build (change freely):
-- Kernel-row Stop tooltip: "This socket belongs to the kernel; there is no process to stop."
-- Own-uid row with an unresolved pid (rare: same-user process whose `/proc/<pid>/fd` couldn't be walked) Stop tooltip: "Can't identify this process. Portside does not run with elevated rights." `ownership` is derived from `uid == getuid()` (SPEC §2's literal definition), not from pid resolvability, so this case is distinct from `other` and needed its own, truthful wording.
+Wording SPEC doesn't specify, chosen during the build (change freely). The kernel and own-uid Stop tooltips started here and are now in SPEC §3.
 - Confirm dialog title: "Stop process".
 - Copy toasts: "Copied localhost:5432", "Copied PID 48213", "Copied command line".
+- Open-in-browser failure toast: "Couldn't open <url>: <error>", with the opener's own error text.
 - Pressing `Delete` on a row that can't be stopped toasts its tooltip reason.
 
 ## Acceptance criteria (SPEC §6)
