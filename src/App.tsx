@@ -134,7 +134,7 @@ export default function App() {
   );
   const byKey = useMemo(() => new Map((rows ?? []).map((r) => [r.key, r])), [rows]);
   const selectedRow = (selected && byKey.get(selected)) || null;
-  const closed = selected !== null && rows !== null && !selectedRow;
+  const closed = selected !== null && rows !== null && !selectedRow && !scanFailed;
   const selIndex = visible.findIndex((r) => r.key === selected);
   if (selIndex >= 0) lastIndex.current = selIndex;
 
