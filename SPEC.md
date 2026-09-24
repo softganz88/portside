@@ -134,7 +134,7 @@ Filter `postgres` → select row → `Ctrl+C` copies `localhost:5432`.
 | 1000+ sockets | List stays responsive (scan + render under 150 ms on a typical machine). |
 | Non-UTF-8 bytes in cmdline | Lossy decode (U+FFFD), never crash. |
 | Clipboard unavailable | Toast "Couldn't copy to clipboard." |
-| No default browser | Toast "No browser is set up to open links." |
+| Opening the browser fails | Toast "Couldn't open <url>: <error>", with the error text from the opener. |
 
 ---
 

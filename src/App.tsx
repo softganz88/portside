@@ -206,8 +206,8 @@ export default function App() {
     if (!url) return;
     try {
       await openUrl(url);
-    } catch {
-      showToast("No browser is set up to open links.");
+    } catch (e) {
+      showToast(`Couldn't open ${url}: ${String(e)}`);
     }
   };
 
