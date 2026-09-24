@@ -1,6 +1,6 @@
 [package]
 name = "portside"
-version = "0.1.3"
+version = "0.1.4"
 description = "See what is listening on your ports and stop it"
 authors = ["Portside"]
 edition = "2021"

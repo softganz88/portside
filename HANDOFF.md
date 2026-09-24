@@ -87,6 +87,15 @@ Later work, each measured before and after with in-app marks:
 - list windowing for 1,000+ sockets, plus a fix keeping the sort headers in the Tab order
 - the AppImage repack step
 
-Releases: v0.1.0 to v0.1.3 on GitHub (`softganz88/portside`). Cut the next one with `/release X.Y.Z` (`.claude/skills/release/`); its `--publish` step hasn't run against a real release yet. v0.1.2 shipped the mixed-compression AppImage; v0.1.3 ships the fully uncompressed one.
+Releases: v0.1.0 to v0.1.4 on GitHub (`softganz88/portside`). Cut the next one with `/release X.Y.Z` (`.claude/skills/release/`); v0.1.4 was the first real run of its `--publish` step. v0.1.2 shipped the mixed-compression AppImage; v0.1.3 ships the fully uncompressed one. v0.1.4 is the review-fix release: the opener URL scope, uid-based ownership, address sort, and the other fixes in `git log v0.1.3..v0.1.4`.
+
+v0.1.4 startup check (`startup-bench`, 2026-09-24, n=20, ms from exec to first scan painted). `spawn_blocking` for the scan didn't change startup:
+
+| Variant | min | median | p90 | max |
+|---|---|---|---|---|
+| v0.1.3 bare | 522 | 637 | 680 | 690 |
+| v0.1.4 bare | 554 | 642 | 663 | 678 |
+| v0.1.3 AppImage | 765 | 875 | 914 | 1079 |
+| v0.1.4 AppImage | 775 | 877 | 919 | 1081 |
 
 `git log` has one commit per fix.
