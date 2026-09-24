@@ -70,7 +70,7 @@ Wording SPEC doesn't specify, chosen during the build (change freely):
 - **Light-theme screenshots** without touching system settings: `GTK_THEME=Mint-Y ./src-tauri/target/release/portside`.
 - **AppImage flags:** `--appimage-offset` and `--appimage-extract` return without launching. `--appimage-extract-and-run` and any other flag (even `--help`) launch the app. `--appimage-extract-and-run` also leaves `/tmp/appimage_extracted_*` behind if the app is killed.
 - **Bundle identifier** is `dev.portside.Portside`. Tauri warns on a `.app` suffix, which breaks the zero-warnings gate.
-- The SubagentStop hook in this user's setup runs `cargo test` / `tsc` / `npm test` in the repo; `npm test` is `vitest run --passWithNoTests`.
+- The SubagentStop hook in this user's setup runs `cargo test` / `tsc` / `npm test` in the repo; `npm test` is `vitest run`.
 
 ## History
 
