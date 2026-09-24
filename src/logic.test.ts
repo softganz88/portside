@@ -163,6 +163,9 @@ describe("stop confirmation and blocking", () => {
       "Owned by another user. Portside does not run with elevated rights.",
     );
     expect(stopBlocked(row({ pid: null, ownership: "kernel" }), 5)).toMatch(/kernel/);
+    expect(stopBlocked(row({ pid: null, ownership: "own" }), 5)).toBe(
+      "Can't identify this process. Portside does not run with elevated rights.",
+    );
     expect(stopBlocked(row({ pid: 5 }), 5)).toBe("This is Portside itself.");
     expect(stopBlocked(row({ pid: 1 }), 5)).toBe("PID 1 is the init process and can't be stopped.");
     expect(stopBlocked(row({ pid: 42, startTicks: null }), 5)).toBe(

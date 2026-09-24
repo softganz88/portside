@@ -23,4 +23,3 @@ Open work, highest priority first. Context for each item is in `HANDOFF.md`.
 
 - [ ] Add a CI job running the four gates plus `npm run tauri build && npm run repack-appimage`.
 - [ ] Automate the manual acceptance checks: an xdotool script for AC1–8 would make regressions visible. Mind the xdotool gotchas in `HANDOFF.md`.
-- [ ] `SPEC.md` §2 defines `own` as "same uid as Portside", but the backend marks `own` when the PID is resolvable. That's equivalent while Portside runs unprivileged; make it literal if that ever changes.

@@ -39,6 +39,7 @@ Screenshots in `docs/screenshots/` are from the current build.
 
 Wording SPEC doesn't specify, chosen during the build (change freely):
 - Kernel-row Stop tooltip: "This socket belongs to the kernel; there is no process to stop."
+- Own-uid row with an unresolved pid (rare: same-user process whose `/proc/<pid>/fd` couldn't be walked) Stop tooltip: "Can't identify this process. Portside does not run with elevated rights." `ownership` is derived from `uid == getuid()` (SPEC §2's literal definition), not from pid resolvability, so this case is distinct from `other` and needed its own, truthful wording.
 - Confirm dialog title: "Stop process".
 - Copy toasts: "Copied localhost:5432", "Copied PID 48213", "Copied command line".
 - Pressing `Delete` on a row that can't be stopped toasts its tooltip reason.

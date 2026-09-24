@@ -124,9 +124,9 @@ export function stopConfirmTail(row: Row, all: readonly Row[]): string {
 /** Why Stop is unavailable for this row, or null when it can be stopped. */
 export function stopBlocked(row: Row, selfPid: number | null): string | null {
   if (row.pid === null) {
-    return row.ownership === "kernel"
-      ? "This socket belongs to the kernel; there is no process to stop."
-      : "Owned by another user. Portside does not run with elevated rights.";
+    if (row.ownership === "kernel") return "This socket belongs to the kernel; there is no process to stop.";
+    if (row.ownership === "own") return "Can't identify this process. Portside does not run with elevated rights.";
+    return "Owned by another user. Portside does not run with elevated rights.";
   }
   if (row.pid === selfPid) return "This is Portside itself.";
   if (row.pid === 1) return "PID 1 is the init process and can't be stopped.";

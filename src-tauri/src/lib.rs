@@ -10,6 +10,19 @@ use tauri::webview::PageLoadEvent;
 use tauri::Manager;
 use tauri_plugin_window_state::StateFlags;
 
+/// SPEC §2: `own` means same uid as Portside, not merely "PID resolvable". A
+/// same-uid process whose fd directory couldn't be walked (e.g. non-dumpable)
+/// is still `own`, just with an unresolved pid.
+fn derive_ownership(inode: u64, uid: u32, self_uid: u32) -> Ownership {
+    if inode == 0 {
+        Ownership::Kernel
+    } else if uid == self_uid {
+        Ownership::Own
+    } else {
+        Ownership::Other
+    }
+}
+
 fn scan_sockets_inner() -> Result<ScanResult, ScanError> {
     let files = proc_net::read_all();
     if files.iter().all(|(_, _, text)| text.is_none()) {
@@ -20,6 +33,7 @@ fn scan_sockets_inner() -> Result<ScanResult, ScanError> {
     let users = procs::load_users();
     let btime = procs::boot_time_secs();
     let clk_tck = procs::clk_tck();
+    let self_uid = nix::unistd::getuid().as_raw();
     let mut proc_cache: HashMap<i32, procs::ProcInfo> = HashMap::new();
 
     let mut rows = Vec::new();
@@ -27,13 +41,7 @@ fn scan_sockets_inner() -> Result<ScanResult, ScanError> {
         let Some(text) = text else { continue };
         for entry in proc_net::parse(text, *proto, *family) {
             let pid = if entry.inode == 0 { None } else { inode_pid.get(&entry.inode).copied() };
-            let ownership = if entry.inode == 0 {
-                Ownership::Kernel
-            } else if pid.is_some() {
-                Ownership::Own
-            } else {
-                Ownership::Other
-            };
+            let ownership = derive_ownership(entry.inode, entry.uid, self_uid);
             let (process, cmdline, started_ms, start_ticks) = match pid {
                 Some(p) => {
                     let info = proc_cache.entry(p).or_insert_with(|| procs::proc_info(p, btime, clk_tck));
@@ -152,6 +160,17 @@ pub fn run() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn ownership_is_by_uid_not_by_pid_resolvability() {
+        // Same uid as Portside is `own` even though no pid was resolved for
+        // this socket (e.g. a non-dumpable same-user process).
+        assert_eq!(derive_ownership(1, 1000, 1000), Ownership::Own);
+        // A different uid is `other`, regardless of whether a pid happened to resolve.
+        assert_eq!(derive_ownership(1, 0, 1000), Ownership::Other);
+        // inode 0 is always kernel-owned, whatever the reported uid.
+        assert_eq!(derive_ownership(0, 1000, 1000), Ownership::Kernel);
+    }
 
     #[test]
     fn real_scan_returns_rows() {
