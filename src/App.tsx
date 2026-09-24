@@ -120,6 +120,10 @@ export default function App() {
   useEffect(() => {
     const onVis = () => setHidden(document.hidden);
     document.addEventListener("visibilitychange", onVis);
+    // The initial `hidden` state is seeded from document.hidden at render time; if
+    // visibilitychange fired between that render and this effect running, this
+    // listener missed it and `hidden` would be stuck. Sync once, right after adding it.
+    onVis();
     const win = getCurrentWindow();
     const unlisten = win.onResized(() => {
       win.isMinimized().then(setMinimized, () => setMinimized(false));
