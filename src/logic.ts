@@ -26,16 +26,34 @@ export function matchesFilter(row: Row, text: string, proto: ProtoFilter): boole
 
 const cmp = <T extends string | number>(a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0);
 
+const WILDCARD = new Set(["0.0.0.0", "[::]"]);
+
+/** Wildcard rows first, then grouped by family, then numeric address order (SPEC W2). */
+function addressSortKey(row: Row): string {
+  const wildcard = WILDCARD.has(row.address) ? "0" : "1";
+  const numeric =
+    row.family === "IPv4"
+      ? row.address
+          .split(".")
+          .map((o) => o.padStart(3, "0"))
+          .join(".")
+      : row.address;
+  return `${wildcard}|${row.family}|${numeric}`;
+}
+
 function defaultCmp(a: Row, b: Row): number {
   return (
-    cmp(a.port, b.port) || cmp(a.proto, b.proto) || cmp(a.address, b.address) || cmp(a.key, b.key)
+    cmp(a.port, b.port) ||
+    cmp(a.proto, b.proto) ||
+    cmp(addressSortKey(a), addressSortKey(b)) ||
+    cmp(a.key, b.key)
   );
 }
 
 const colValue: Record<SortCol, (r: Row) => string | number> = {
   port: (r) => r.port,
   proto: (r) => r.proto,
-  address: (r) => r.address,
+  address: addressSortKey,
   process: (r) => displayName(r).toLowerCase(),
   pid: (r) => r.pid ?? Number.MAX_SAFE_INTEGER,
   user: (r) => r.user.toLowerCase(),
@@ -82,8 +100,6 @@ export function mergeScan(prev: readonly Row[] | null, next: readonly Row[]): Me
   const nextKeys = new Set(next.map((r) => r.key));
   return { rows, added, removed: prev.some((r) => !nextKeys.has(r.key)) };
 }
-
-const WILDCARD = new Set(["0.0.0.0", "[::]"]);
 
 export function copyAddress(row: Row): string {
   return `${WILDCARD.has(row.address) ? "localhost" : row.address}:${row.port}`;

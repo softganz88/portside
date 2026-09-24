@@ -89,6 +89,16 @@ describe("sortRows", () => {
     sortRows(input, DEFAULT_SORT);
     expect(input).toEqual([b, a]);
   });
+  it("sorting by address groups wildcards first, then by family, then numerically", () => {
+    const v4wild = row({ port: 1, address: "0.0.0.0", family: "IPv4" });
+    const v6wild = row({ port: 2, address: "[::]", family: "IPv6" });
+    const v4a = row({ port: 3, address: "10.0.0.5", family: "IPv4" });
+    const v4b = row({ port: 4, address: "192.168.1.5", family: "IPv4" });
+    const v6a = row({ port: 5, address: "[::1]", family: "IPv6" });
+    expect(
+      keys(sortRows([v6a, v4b, v6wild, v4a, v4wild], { col: "address", dir: "asc" })),
+    ).toEqual(keys([v4wild, v6wild, v4a, v4b, v6a]));
+  });
   it("nextSort toggles direction on the same column and resets on a new one", () => {
     const s1 = nextSort(DEFAULT_SORT, "port");
     expect(s1).toEqual({ col: "port", dir: "desc" });
