@@ -39,10 +39,9 @@ pub fn inode_to_pid_map() -> HashMap<u64, i32> {
     map
 }
 
-/// Reads (state, start-ticks) from `/proc/<pid>/stat`, parsing after the
-/// last `)` so a `comm` containing spaces or parens is safe.
-pub fn read_stat_state_ticks(pid: i32) -> Option<(char, u64)> {
-    let stat = fs::read_to_string(format!("/proc/{pid}/stat")).ok()?;
+/// Parses (state, start-ticks) from the contents of `/proc/<pid>/stat`,
+/// parsing after the last `)` so a `comm` containing spaces or parens is safe.
+pub fn parse_stat(stat: &str) -> Option<(char, u64)> {
     let comm_end = stat.rfind(')')?;
     let rest = stat.get(comm_end + 1..)?.trim_start();
     let mut fields = rest.split_whitespace();
@@ -52,12 +51,15 @@ pub fn read_stat_state_ticks(pid: i32) -> Option<(char, u64)> {
     Some((state, ticks))
 }
 
-fn read_comm(pid: i32) -> Option<String> {
-    fs::read_to_string(format!("/proc/{pid}/comm")).ok().map(|s| s.trim_end_matches('\n').to_string())
+/// Reads (state, start-ticks) from `/proc/<pid>/stat`.
+pub fn read_stat_state_ticks(pid: i32) -> Option<(char, u64)> {
+    let stat = fs::read_to_string(format!("/proc/{pid}/stat")).ok()?;
+    parse_stat(&stat)
 }
 
-fn read_cmdline(pid: i32) -> String {
-    let mut bytes = fs::read(format!("/proc/{pid}/cmdline")).unwrap_or_default();
+/// Replaces NUL separators with spaces and lossily decodes non-UTF-8 bytes.
+pub fn cmdline_from_bytes(bytes: &[u8]) -> String {
+    let mut bytes = bytes.to_vec();
     for b in bytes.iter_mut() {
         if *b == 0 {
             *b = b' ';
@@ -66,10 +68,24 @@ fn read_cmdline(pid: i32) -> String {
     String::from_utf8_lossy(&bytes).trim_end().to_string()
 }
 
+fn read_comm(pid: i32) -> Option<String> {
+    fs::read_to_string(format!("/proc/{pid}/comm")).ok().map(|s| s.trim_end_matches('\n').to_string())
+}
+
+fn read_cmdline(pid: i32) -> String {
+    let bytes = fs::read(format!("/proc/{pid}/cmdline")).unwrap_or_default();
+    cmdline_from_bytes(&bytes)
+}
+
+/// Parses `btime` (boot time, epoch seconds) out of the contents of `/proc/stat`.
+pub fn parse_boot_time(stat: &str) -> Option<i64> {
+    stat.lines().find_map(|l| l.strip_prefix("btime ")).and_then(|v| v.trim().parse().ok())
+}
+
 /// `btime` (boot time, epoch seconds) from `/proc/stat`.
 pub fn boot_time_secs() -> Option<i64> {
     let stat = fs::read_to_string("/proc/stat").ok()?;
-    stat.lines().find_map(|l| l.strip_prefix("btime ")).and_then(|v| v.trim().parse().ok())
+    parse_boot_time(&stat)
 }
 
 pub fn clk_tck() -> i64 {
@@ -86,10 +102,10 @@ pub fn proc_info(pid: i32, btime_secs: i64, clk_tck: i64) -> ProcInfo {
     ProcInfo { comm: read_comm(pid), cmdline: read_cmdline(pid), started_ms, start_ticks }
 }
 
-/// Parses `/etc/passwd` once per scan into a uid -> user name map.
-pub fn load_users() -> HashMap<u32, String> {
+/// Parses `/etc/passwd` text into a uid -> user name map. First entry for a
+/// uid wins, matching `getpwuid`'s first-match-in-file lookup order.
+pub fn parse_passwd(text: &str) -> HashMap<u32, String> {
     let mut map = HashMap::new();
-    let Ok(text) = fs::read_to_string("/etc/passwd") else { return map };
     for line in text.lines() {
         let mut parts = line.split(':');
         let Some(name) = parts.next() else { continue };
@@ -98,6 +114,12 @@ pub fn load_users() -> HashMap<u32, String> {
         map.entry(uid).or_insert_with(|| name.to_string());
     }
     map
+}
+
+/// Parses `/etc/passwd` once per scan into a uid -> user name map.
+pub fn load_users() -> HashMap<u32, String> {
+    let Ok(text) = fs::read_to_string("/etc/passwd") else { return HashMap::new() };
+    parse_passwd(&text)
 }
 
 pub fn username(uid: u32, users: &HashMap<u32, String>) -> String {
@@ -112,53 +134,43 @@ mod tests {
     fn stat_field_22_survives_comm_with_spaces_and_parens() {
         // fields 4..21 (ppid..itrealvalue), 18 of them, then field 22 (starttime) = 424242.
         let stat = "1 (a) b) S 1 1 1 0 -1 0 0 0 0 0 0 0 0 0 0 0 0 0 424242 0 0 0 0 0 0 0 0 0";
-        let comm_end = stat.rfind(')').unwrap();
-        let rest = stat[comm_end + 1..].trim_start();
-        let mut fields = rest.split_whitespace();
-        let state = fields.next().unwrap();
-        assert_eq!(state, "S");
-        let ticks: u64 = fields.nth(18).unwrap().parse().unwrap();
-        assert_eq!(ticks, 424242);
+        assert_eq!(parse_stat(stat), Some(('S', 424242)));
+    }
+
+    #[test]
+    fn stat_malformed_returns_none() {
+        assert_eq!(parse_stat("no closing paren here"), None);
     }
 
     #[test]
     fn cmdline_replaces_nul_and_trims() {
-        let mut bytes = b"node\0server.js\0--port\x00 3000\0".to_vec();
-        for b in bytes.iter_mut() {
-            if *b == 0 {
-                *b = b' ';
-            }
-        }
-        let s = String::from_utf8_lossy(&bytes).trim_end().to_string();
-        assert_eq!(s, "node server.js --port  3000");
+        let bytes = b"node\0server.js\0--port\x00 3000\0";
+        assert_eq!(cmdline_from_bytes(bytes), "node server.js --port  3000");
     }
 
     #[test]
     fn cmdline_lossy_decodes_non_utf8() {
-        let mut bytes = vec![b'x', 0xFF, 0x00, b'y'];
-        for b in bytes.iter_mut() {
-            if *b == 0 {
-                *b = b' ';
-            }
-        }
-        let s = String::from_utf8_lossy(&bytes).trim_end().to_string();
+        let bytes = [b'x', 0xFF, 0x00, b'y'];
+        let s = cmdline_from_bytes(&bytes);
         assert!(s.starts_with('x'));
         assert!(s.ends_with('y'));
     }
 
     #[test]
-    fn parses_passwd_line() {
-        let text = "root:x:0:0:root:/root:/bin/bash\nalice:x:1000:1000:Alice:/home/alice:/bin/bash\nmalformed\n";
-        let mut map = HashMap::new();
-        for line in text.lines() {
-            let mut parts = line.split(':');
-            let Some(name) = parts.next() else { continue };
-            parts.next();
-            let Some(Ok(uid)) = parts.next().map(|s| s.parse::<u32>()) else { continue };
-            map.insert(uid, name.to_string());
-        }
+    fn parses_passwd_line_first_wins() {
+        // Matches load_users()/getpwuid's first-match-in-file order: a duplicate
+        // uid later in the file must not override the first entry.
+        let text = "root:x:0:0:root:/root:/bin/bash\nalice:x:1000:1000:Alice:/home/alice:/bin/bash\nmalformed\nbob:x:1000:1000:Bob:/home/bob:/bin/bash\n";
+        let map = parse_passwd(text);
         assert_eq!(map.get(&0), Some(&"root".to_string()));
         assert_eq!(map.get(&1000), Some(&"alice".to_string()));
         assert_eq!(username(9999, &map), "9999");
+    }
+
+    #[test]
+    fn parses_boot_time_line() {
+        let text = "cpu  1 2 3\nbtime 1700000000\nprocesses 42\n";
+        assert_eq!(parse_boot_time(text), Some(1_700_000_000));
+        assert_eq!(parse_boot_time("no btime here"), None);
     }
 }
