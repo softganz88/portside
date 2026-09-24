@@ -70,8 +70,8 @@ fn parse_line(line: &str, proto: Proto, family: Family) -> Option<Entry> {
 }
 
 /// The kernel prints each 32-bit word of the address in host byte order, so
-/// on little-endian hardware each 8-hex-char chunk is the *big-endian text*
-/// of a little-endian u32.
+/// each 8-hex-char chunk is the *big-endian text* of a native-endian u32:
+/// `to_ne_bytes` decodes it correctly regardless of the host's endianness.
 fn format_address(hex: &str, family: Family) -> Option<String> {
     match family {
         Family::IPv4 => {
@@ -79,7 +79,7 @@ fn format_address(hex: &str, family: Family) -> Option<String> {
                 return None;
             }
             let v = u32::from_str_radix(hex, 16).ok()?;
-            Some(Ipv4Addr::from(v.to_le_bytes()).to_string())
+            Some(Ipv4Addr::from(v.to_ne_bytes()).to_string())
         }
         Family::IPv6 => {
             if hex.len() != 32 {
@@ -89,7 +89,7 @@ fn format_address(hex: &str, family: Family) -> Option<String> {
             for i in 0..4 {
                 let chunk = hex.get(i * 8..i * 8 + 8)?;
                 let v = u32::from_str_radix(chunk, 16).ok()?;
-                bytes[i * 4..i * 4 + 4].copy_from_slice(&v.to_le_bytes());
+                bytes[i * 4..i * 4 + 4].copy_from_slice(&v.to_ne_bytes());
             }
             Some(format!("[{}]", Ipv6Addr::from(bytes)))
         }
